@@ -1,4 +1,4 @@
-package eu.faircode.netguard.ui;
+package eu.faircode.netguard.ui.rules;
 
 /*
     This file is part of NetGuard.

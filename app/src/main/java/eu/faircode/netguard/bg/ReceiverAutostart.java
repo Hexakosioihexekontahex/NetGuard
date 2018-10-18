@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.bg;
 
 /*
     This file is part of NetGuard.
@@ -28,6 +28,9 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.util.Map;
+
+import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.Util;
 
 public class ReceiverAutostart extends BroadcastReceiver {
     private static final String TAG = "NetGuard.Receiver";

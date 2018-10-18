@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.db;
 
 /*
     This file is part of NetGuard.
@@ -40,6 +40,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import eu.faircode.netguard.Packet;
+import eu.faircode.netguard.ResourceRecord;
+import eu.faircode.netguard.Usage;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "NetGuard.Database";

@@ -1,4 +1,4 @@
-package eu.faircode.netguard.ui;
+package eu.faircode.netguard.ui.settings;
 
 /*
     This file is part of NetGuard.
@@ -91,15 +91,18 @@ import java.util.Set;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
-import eu.faircode.netguard.DatabaseHelper;
-import eu.faircode.netguard.DownloadTask;
 import eu.faircode.netguard.IAB;
 import eu.faircode.netguard.Packet;
 import eu.faircode.netguard.R;
-import eu.faircode.netguard.ReceiverAutostart;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.bg.ReceiverAutostart;
+import eu.faircode.netguard.db.DatabaseHelper;
+import eu.faircode.netguard.ui.ActivityPro;
+import eu.faircode.netguard.ui.FragmentSettings;
 import eu.faircode.netguard.ui.dns.ActivityDns;
+import eu.faircode.netguard.ui.forwarding.ActivityForwarding;
+import eu.faircode.netguard.ui.rules.ActivityMain;
 
 public class ActivitySettings extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "NetGuard.Settings";

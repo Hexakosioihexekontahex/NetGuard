@@ -32,9 +32,9 @@ import android.util.Log;
 
 import java.util.Date;
 
-import eu.faircode.netguard.ReceiverAutostart;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.bg.ReceiverAutostart;
 
 public class WidgetAdmin extends ReceiverAutostart {
     private static final String TAG = "NetGuard.Widget";

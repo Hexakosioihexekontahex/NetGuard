@@ -112,9 +112,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import eu.faircode.netguard.ui.ActivityMain;
+import eu.faircode.netguard.db.DatabaseHelper;
 import eu.faircode.netguard.ui.ActivityPro;
 import eu.faircode.netguard.ui.remote.WidgetMain;
+import eu.faircode.netguard.ui.rules.ActivityMain;
 
 public class ServiceSinkhole extends VpnService implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "NetGuard.Service";

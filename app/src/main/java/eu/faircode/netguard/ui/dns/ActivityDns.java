@@ -25,9 +25,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ListView;
 
-import eu.faircode.netguard.DatabaseHelper;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.db.DatabaseHelper;
 import eu.faircode.netguard.ui.ActionBarActivity;
 import eu.faircode.netguard.ui.ApproveDialog;
 

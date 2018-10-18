@@ -1,4 +1,4 @@
-package eu.faircode.netguard.ui;
+package eu.faircode.netguard.ui.forwarding;
 
 /*
     This file is part of NetGuard.

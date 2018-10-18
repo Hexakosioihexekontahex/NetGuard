@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui.settings;
 
 /*
     This file is part of NetGuard.
@@ -41,7 +41,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 
-import eu.faircode.netguard.ui.ActivitySettings;
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.ServiceSinkhole;
 
 public class DownloadTask extends AsyncTask<Object, Integer, Object> {
     private static final String TAG = "NetGuard.Download";

@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.bg;
 
 /*
     This file is part of NetGuard.
@@ -22,13 +22,11 @@ package eu.faircode.netguard;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Build;
-import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
-import java.util.Map;
+import eu.faircode.netguard.Util;
+import eu.faircode.netguard.db.DatabaseHelper;
 
 public class ReceiverPackageRemoved extends BroadcastReceiver {
     private static final String TAG = "NetGuard.Receiver";

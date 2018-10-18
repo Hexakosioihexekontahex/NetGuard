@@ -1,4 +1,4 @@
-package eu.faircode.netguard.ui;
+package eu.faircode.netguard.ui.rules;
 
 /*
     This file is part of NetGuard.
@@ -75,13 +75,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import eu.faircode.netguard.DatabaseHelper;
 import eu.faircode.netguard.GlideApp;
 import eu.faircode.netguard.IAB;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.Rule;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.db.DatabaseHelper;
+import eu.faircode.netguard.ui.ActivityPro;
 
 public class AdapterRule extends RecyclerView.Adapter<AdapterRule.ViewHolder> implements Filterable {
     private static final String TAG = "NetGuard.Adapter";

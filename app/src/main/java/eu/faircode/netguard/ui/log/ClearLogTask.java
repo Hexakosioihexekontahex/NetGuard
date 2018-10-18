@@ -8,10 +8,10 @@ import android.util.Log;
 
 import java.io.File;
 
-import eu.faircode.netguard.DatabaseHelper;
+import eu.faircode.netguard.IFiles;
+import eu.faircode.netguard.IPrefs;
 import eu.faircode.netguard.ServiceSinkhole;
-import eu.faircode.netguard.lib.IFiles;
-import eu.faircode.netguard.lib.IPrefs;
+import eu.faircode.netguard.db.DatabaseHelper;
 
 import static eu.faircode.netguard.ui.log.ActivityLog.TAG;
 

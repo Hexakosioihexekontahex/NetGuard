@@ -84,6 +84,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import eu.faircode.netguard.db.DatabaseHelper;
+
 public class Util {
     private static final String TAG = "NetGuard.Util";
     private static final Map<String, String> mapIPOrganization = new HashMap<>();

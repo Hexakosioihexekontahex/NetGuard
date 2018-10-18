@@ -53,19 +53,19 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import eu.faircode.netguard.DatabaseHelper;
 import eu.faircode.netguard.IAB;
+import eu.faircode.netguard.IFiles;
+import eu.faircode.netguard.IPrefs;
 import eu.faircode.netguard.Packet;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.Rule;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
-import eu.faircode.netguard.lib.IFiles;
-import eu.faircode.netguard.lib.IPrefs;
-import eu.faircode.netguard.lib.db.LogDB;
+import eu.faircode.netguard.db.DatabaseHelper;
+import eu.faircode.netguard.db.LogDB;
 import eu.faircode.netguard.ui.ActionBarActivity;
-import eu.faircode.netguard.ui.ActivityMain;
 import eu.faircode.netguard.ui.ActivityPro;
+import eu.faircode.netguard.ui.rules.ActivityMain;
 
 public class ActivityLog extends ActionBarActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
         CompoundButton.OnCheckedChangeListener, FilterQueryProvider, AdapterView.OnItemClickListener {

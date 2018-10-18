@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.bg;
 
 /*
     This file is part of NetGuard.
@@ -38,6 +38,10 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.Util;
 
 public class ServiceExternal extends IntentService {
     private static final String TAG = "NetGuard.External";

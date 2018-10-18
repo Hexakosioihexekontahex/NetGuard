@@ -14,14 +14,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import eu.faircode.netguard.IFiles;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.ServiceSinkhole;
-import eu.faircode.netguard.lib.IFiles;
 
 import static eu.faircode.netguard.ui.log.ActivityLog.TAG;
 
 /**
- * Created by Owner
+ * Created by Max
  * on 18/10/2018.
  */
 class ExportPcapTask extends AsyncTask<Object, Object, Throwable> {

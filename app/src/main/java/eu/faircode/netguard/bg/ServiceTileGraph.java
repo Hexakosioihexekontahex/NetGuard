@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.bg;
 
 /*
     This file is part of NetGuard.
@@ -21,6 +21,7 @@ package eu.faircode.netguard;
 
 
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Icon;
 import android.os.Build;
@@ -29,11 +30,14 @@ import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.util.Log;
 
-import eu.faircode.netguard.ui.remote.WidgetLockdown;
+import eu.faircode.netguard.IAB;
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.ui.ActivityPro;
 
 @TargetApi(Build.VERSION_CODES.N)
-public class ServiceTileLockdown extends TileService implements SharedPreferences.OnSharedPreferenceChangeListener {
-    private static final String TAG = "NetGuard.TileLockdown";
+public class ServiceTileGraph extends TileService implements SharedPreferences.OnSharedPreferenceChangeListener {
+    private static final String TAG = "NetGuard.TileGraph";
 
     public void onStartListening() {
         Log.i(TAG, "Start listening");
@@ -44,17 +48,17 @@ public class ServiceTileLockdown extends TileService implements SharedPreference
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if ("lockdown".equals(key))
+        if ("show_stats".equals(key))
             update();
     }
 
     private void update() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean lockdown = prefs.getBoolean("lockdown", false);
+        boolean stats = prefs.getBoolean("show_stats", false);
         Tile tile = getQsTile();
         if (tile != null) {
-            tile.setState(lockdown ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
-            tile.setIcon(Icon.createWithResource(this, lockdown ? R.drawable.ic_lock_outline_white_24dp : R.drawable.ic_lock_outline_white_24dp_60));
+            tile.setState(stats ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
+            tile.setIcon(Icon.createWithResource(this, stats ? R.drawable.ic_equalizer_white_24dp : R.drawable.ic_equalizer_white_24dp_60));
             tile.updateTile();
         }
     }
@@ -68,9 +72,13 @@ public class ServiceTileLockdown extends TileService implements SharedPreference
     public void onClick() {
         Log.i(TAG, "Click");
 
+        // Check state
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        prefs.edit().putBoolean("lockdown", !prefs.getBoolean("lockdown", false)).apply();
-        ServiceSinkhole.reload("tile", this, false);
-        WidgetLockdown.updateWidgets(this);
+        boolean stats = !prefs.getBoolean("show_stats", false);
+        if (stats && !IAB.isPurchased(ActivityPro.SKU_SPEED, this))
+            startActivity(new Intent(this, ActivityPro.class));
+        else
+            prefs.edit().putBoolean("show_stats", stats).apply();
+        ServiceSinkhole.reloadStats("tile", this);
     }
 }

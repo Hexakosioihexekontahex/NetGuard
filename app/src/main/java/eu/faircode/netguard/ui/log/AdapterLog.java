@@ -30,7 +30,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.view.ViewCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
@@ -45,59 +44,39 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 import eu.faircode.netguard.GlideApp;
+import eu.faircode.netguard.IPrefs;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.dto.LogItem;
+import eu.faircode.netguard.parser.ICursorParser;
+import eu.faircode.netguard.parser.LogParser;
 
 public class AdapterLog extends CursorAdapter {
-    private static String TAG = "NetGuard.Log";
+    static String TAG = "NetGuard.Log";
 
+    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+    private final ICursorParser<LogItem> parser;
     private boolean resolve;
     private boolean organization;
-    private int colTime;
-    private int colVersion;
-    private int colProtocol;
-    private int colFlags;
-    private int colSAddr;
-    private int colSPort;
-    private int colDAddr;
-    private int colDPort;
-    private int colDName;
-    private int colUid;
-    private int colData;
-    private int colAllowed;
-    private int colConnection;
-    private int colInteractive;
-    private int colorOn;
-    private int colorOff;
-    private int iconSize;
-    private InetAddress dns1 = null;
-    private InetAddress dns2 = null;
-    private InetAddress vpn4 = null;
-    private InetAddress vpn6 = null;
+    private final int colorOn;
+    private final int colorOff;
+    private final int iconSize;
+    private InetAddress dns1 ;
+    private InetAddress dns2;
+    private InetAddress vpn4;
+    private InetAddress vpn6;
 
-    public AdapterLog(Context context, Cursor cursor, boolean resolve, boolean organization) {
+    AdapterLog(Context context, Cursor cursor, boolean resolve, boolean organization) {
         super(context, cursor, 0);
         this.resolve = resolve;
         this.organization = organization;
-        colTime = cursor.getColumnIndex("time");
-        colVersion = cursor.getColumnIndex("version");
-        colProtocol = cursor.getColumnIndex("protocol");
-        colFlags = cursor.getColumnIndex("flags");
-        colSAddr = cursor.getColumnIndex("saddr");
-        colSPort = cursor.getColumnIndex("sport");
-        colDAddr = cursor.getColumnIndex("daddr");
-        colDPort = cursor.getColumnIndex("dport");
-        colDName = cursor.getColumnIndex("dname");
-        colUid = cursor.getColumnIndex("uid");
-        colData = cursor.getColumnIndex("data");
-        colAllowed = cursor.getColumnIndex("allowed");
-        colConnection = cursor.getColumnIndex("connection");
-        colInteractive = cursor.getColumnIndex("interactive");
+        parser = new LogParser(cursor);
 
-        TypedValue tv = new TypedValue();
+        final TypedValue tv = new TypedValue();
         context.getTheme().resolveAttribute(R.attr.colorOn, tv, true);
         colorOn = tv.data;
         context.getTheme().resolveAttribute(R.attr.colorOff, tv, true);
@@ -106,18 +85,22 @@ public class AdapterLog extends CursorAdapter {
         iconSize = Util.dips2pixels(24, context);
 
         try {
-            List<InetAddress> lstDns = ServiceSinkhole.getDns(context);
+            final List<InetAddress> lstDns = ServiceSinkhole.getDns(context);
             dns1 = (lstDns.size() > 0 ? lstDns.get(0) : null);
             dns2 = (lstDns.size() > 1 ? lstDns.get(1) : null);
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-            vpn4 = InetAddress.getByName(prefs.getString("vpn4", "10.1.10.1"));
-            vpn6 = InetAddress.getByName(prefs.getString("vpn6", "fd00:1:fd00:1:fd00:1:fd00:1"));
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            vpn4 = InetAddress.getByName(prefs.getString(IPrefs.KEY_VPN4, "10.1.10.1"));
+            vpn6 = InetAddress.getByName(prefs.getString(IPrefs.KEY_VPN6, "fd00:1:fd00:1:fd00:1:fd00:1"));
         } catch (UnknownHostException ex) {
             Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            dns1 = null;
+            dns2 = null;
+            vpn4 = null;
+            vpn6 = null;
         }
     }
 
-    public void setResolve(boolean resolve) {
+    void setResolve(boolean resolve) {
         this.resolve = resolve;
     }
 
@@ -127,246 +110,221 @@ public class AdapterLog extends CursorAdapter {
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        return LayoutInflater.from(context).inflate(R.layout.log, parent, false);
+        final View view = LayoutInflater.from(context).inflate(R.layout.log, parent, false);
+        view.setTag(new LogVH(view));
+        return view;
     }
 
     @Override
     public void bindView(final View view, final Context context, final Cursor cursor) {
-        // Get values
-        long time = cursor.getLong(colTime);
-        int version = (cursor.isNull(colVersion) ? -1 : cursor.getInt(colVersion));
-        int protocol = (cursor.isNull(colProtocol) ? -1 : cursor.getInt(colProtocol));
-        String flags = cursor.getString(colFlags);
-        String saddr = cursor.getString(colSAddr);
-        int sport = (cursor.isNull(colSPort) ? -1 : cursor.getInt(colSPort));
-        String daddr = cursor.getString(colDAddr);
-        int dport = (cursor.isNull(colDPort) ? -1 : cursor.getInt(colDPort));
-        String dname = (cursor.isNull(colDName) ? null : cursor.getString(colDName));
-        int uid = (cursor.isNull(colUid) ? -1 : cursor.getInt(colUid));
-        String data = cursor.getString(colData);
-        int allowed = (cursor.isNull(colAllowed) ? -1 : cursor.getInt(colAllowed));
-        int connection = (cursor.isNull(colConnection) ? -1 : cursor.getInt(colConnection));
-        int interactive = (cursor.isNull(colInteractive) ? -1 : cursor.getInt(colInteractive));
+        ((LogVH) view.getTag()).bindItem(context, cursor);
+    }
 
-        // Get views
-        TextView tvTime = view.findViewById(R.id.tvTime);
-        TextView tvProtocol = view.findViewById(R.id.tvProtocol);
-        TextView tvFlags = view.findViewById(R.id.tvFlags);
-        TextView tvSAddr = view.findViewById(R.id.tvSAddr);
-        TextView tvSPort = view.findViewById(R.id.tvSPort);
-        final TextView tvDaddr = view.findViewById(R.id.tvDAddr);
-        TextView tvDPort = view.findViewById(R.id.tvDPort);
-        final TextView tvOrganization = view.findViewById(R.id.tvOrganization);
-        final ImageView ivIcon = view.findViewById(R.id.ivIcon);
-        TextView tvUid = view.findViewById(R.id.tvUid);
-        TextView tvData = view.findViewById(R.id.tvData);
-        ImageView ivConnection = view.findViewById(R.id.ivConnection);
-        ImageView ivInteractive = view.findViewById(R.id.ivInteractive);
+    private class LogVH {
+        final TextView tvTime;
+        final TextView tvProtocol;
+        final TextView tvFlags;
+        final TextView tvSAddr;
+        final TextView tvSPort;
+        final TextView tvDaddr;
+        final TextView tvDPort;
+        final TextView tvOrganization;
+        final ImageView ivIcon;
+        final TextView tvUid;
+        final TextView tvData;
+        final ImageView ivConnection;
+        final ImageView ivInteractive;
+        final View root;
 
-        // Show time
-        tvTime.setText(new SimpleDateFormat("HH:mm:ss").format(time));
-
-        // Show connection type
-        if (connection <= 0)
-            ivConnection.setImageResource(allowed > 0 ? R.drawable.host_allowed : R.drawable.host_blocked);
-        else {
-            if (allowed > 0)
-                ivConnection.setImageResource(connection == 1 ? R.drawable.wifi_on : R.drawable.other_on);
-            else
-                ivConnection.setImageResource(connection == 1 ? R.drawable.wifi_off : R.drawable.other_off);
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            Drawable wrap = DrawableCompat.wrap(ivConnection.getDrawable());
-            DrawableCompat.setTint(wrap, allowed > 0 ? colorOn : colorOff);
+        LogVH(View view){
+            root = view;
+            tvTime = view.findViewById(R.id.tvTime);
+            tvProtocol = view.findViewById(R.id.tvProtocol);
+            tvFlags = view.findViewById(R.id.tvFlags);
+            tvSAddr = view.findViewById(R.id.tvSAddr);
+            tvSPort = view.findViewById(R.id.tvSPort);
+            tvDaddr = view.findViewById(R.id.tvDAddr);
+            tvDPort = view.findViewById(R.id.tvDPort);
+            tvOrganization = view.findViewById(R.id.tvOrganization);
+            ivIcon = view.findViewById(R.id.ivIcon);
+            tvUid = view.findViewById(R.id.tvUid);
+            tvData = view.findViewById(R.id.tvData);
+            ivConnection = view.findViewById(R.id.ivConnection);
+            ivInteractive = view.findViewById(R.id.ivInteractive);
         }
 
-        // Show if screen on
-        if (interactive <= 0)
-            ivInteractive.setImageDrawable(null);
-        else {
-            ivInteractive.setImageResource(R.drawable.screen_on);
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                Drawable wrap = DrawableCompat.wrap(ivInteractive.getDrawable());
-                DrawableCompat.setTint(wrap, colorOn);
+        void bindItem(Context context, Cursor cursor) {
+            final LogItem item = parser.parseItem(cursor);
+
+            // Show time
+            tvTime.setText(sdf.format(item.time));
+
+            // Show connection type
+            if (item.connection <= 0) {
+                ivConnection.setImageResource(item.allowed > 0 ? R.drawable.host_allowed : R.drawable.host_blocked);
             }
-        }
-
-        // Show protocol name
-        tvProtocol.setText(Util.getProtocolName(protocol, version, false));
-
-        // SHow TCP flags
-        tvFlags.setText(flags);
-        tvFlags.setVisibility(TextUtils.isEmpty(flags) ? View.GONE : View.VISIBLE);
-
-        // Show source and destination port
-        if (protocol == 6 || protocol == 17) {
-            tvSPort.setText(sport < 0 ? "" : getKnownPort(sport));
-            tvDPort.setText(dport < 0 ? "" : getKnownPort(dport));
-        } else {
-            tvSPort.setText(sport < 0 ? "" : Integer.toString(sport));
-            tvDPort.setText(dport < 0 ? "" : Integer.toString(dport));
-        }
-
-        // Application icon
-        ApplicationInfo info = null;
-        PackageManager pm = context.getPackageManager();
-        String[] pkg = pm.getPackagesForUid(uid);
-        if (pkg != null && pkg.length > 0)
-            try {
-                info = pm.getApplicationInfo(pkg[0], 0);
-            } catch (PackageManager.NameNotFoundException ignored) {
-            }
-
-        if (info == null)
-            ivIcon.setImageDrawable(null);
-        else {
-            if (info.icon <= 0)
-                ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
             else {
-                Uri uri = Uri.parse("android.resource://" + info.packageName + "/" + info.icon);
-                GlideApp.with(context)
-                        .load(uri)
-                        //.diskCacheStrategy(DiskCacheStrategy.NONE)
-                        //.skipMemoryCache(true)
-                        .override(iconSize, iconSize)
-                        .into(ivIcon);
+                if (item.isAllowed()) {
+                    ivConnection.setImageResource(item.hasConnection() ? R.drawable.wifi_on : R.drawable.other_on);
+                }
+                else {
+                    ivConnection.setImageResource(item.hasConnection() ? R.drawable.wifi_off : R.drawable.other_off);
+                }
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                final Drawable wrap = DrawableCompat.wrap(ivConnection.getDrawable());
+                DrawableCompat.setTint(wrap, item.isAllowed() ? colorOn : colorOff);
+            }
+
+            // Show if screen on
+            if (item.interactive <= 0) {
+                ivInteractive.setImageDrawable(null);
+            }
+            else {
+                ivInteractive.setImageResource(R.drawable.screen_on);
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                    final Drawable wrap = DrawableCompat.wrap(ivInteractive.getDrawable());
+                    DrawableCompat.setTint(wrap, colorOn);
+                }
+            }
+
+            // Show protocol name
+            tvProtocol.setText(Util.getProtocolName(item.protocol, item.version, false));
+
+            // SHow TCP flags
+            tvFlags.setText(item.flags);
+            tvFlags.setVisibility(TextUtils.isEmpty(item.flags) ? View.GONE : View.VISIBLE);
+
+            // Show source and destination port
+            if (item.isTcpOrUdp()) {
+                tvSPort.setText(item.isSPortInValid() ? "" : getKnownPort(item.sPort));
+                tvDPort.setText(item.isDPortInValid() ? "" : getKnownPort(item.dPort));
+            }
+            else {
+                tvSPort.setText(item.isSPortInValid() ? "" : String.valueOf(item.sPort));
+                tvDPort.setText(item.isDPortInValid() ? "" : String.valueOf(item.dPort));
+            }
+
+            // Application icon
+            ApplicationInfo info = null;
+            final PackageManager pm = context.getPackageManager();
+            final String[] pkg = pm.getPackagesForUid(item.uid);
+            if (pkg != null && pkg.length > 0)
+                try {
+                    info = pm.getApplicationInfo(pkg[0], 0);
+                } catch (PackageManager.NameNotFoundException ignored) { }
+
+            if (info == null) {
+                ivIcon.setImageDrawable(null);
+            }
+            else {
+                if (info.icon <= 0) {
+                    ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+                }
+                else {
+                    final Uri uri = Uri.parse("android.resource://" + info.packageName + "/" + info.icon);
+                    GlideApp.with(context).load(uri).override(iconSize, iconSize).into(ivIcon);
+                }
+            }
+
+            final boolean we = (android.os.Process.myUid() == item.uid);
+
+            // https://android.googlesource.com/platform/system/core/+/master/include/private/android_filesystem_config.h
+            int uid = item.uid % 100000; // strip off user ID
+            if (uid == -1) {
+                tvUid.setText("");
+            }
+            else if (item.uid == 0) {
+                tvUid.setText(context.getString(R.string.title_root));
+            }
+            else if (item.uid == 9999) {
+                tvUid.setText("-"); // nobody
+            }
+            else {
+                tvUid.setText(String.valueOf(item.uid));
+            }
+
+            // Show source address
+            tvSAddr.setText(getKnownAddress(item.sAddr));
+
+            // Show destination address
+            if (!we && resolve && isKnownAddress(item.dAddr)) {
+                if (item.dName == null) {
+                    tvDaddr.setText(item.dAddr);
+                    new GetHostNameTask(tvDaddr, item.dAddr).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+                else {
+                    tvDaddr.setText(item.dName);
+                }
+            }
+            else {
+                tvDaddr.setText(getKnownAddress(item.dAddr));
+            }
+
+            // Show organization
+            tvOrganization.setVisibility(View.GONE);
+            if (!we && organization && isKnownAddress(item.dAddr)) {
+                new GetOrganizationTask(tvOrganization, item.dAddr).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
+
+            // Show extra data
+            if (TextUtils.isEmpty(item.data)) {
+                //tvData.setText("");
+                tvData.setVisibility(View.GONE);
+            }
+            else {
+                tvData.setText(item.data);
+                tvData.setVisibility(View.VISIBLE);
             }
         }
 
-        boolean we = (android.os.Process.myUid() == uid);
-
-        // https://android.googlesource.com/platform/system/core/+/master/include/private/android_filesystem_config.h
-        uid = uid % 100000; // strip off user ID
-        if (uid == -1)
-            tvUid.setText("");
-        else if (uid == 0)
-            tvUid.setText(context.getString(R.string.title_root));
-        else if (uid == 9999)
-            tvUid.setText("-"); // nobody
-        else
-            tvUid.setText(Integer.toString(uid));
-
-        // Show source address
-        tvSAddr.setText(getKnownAddress(saddr));
-
-        // Show destination address
-        if (!we && resolve && !isKnownAddress(daddr))
-            if (dname == null) {
-                tvDaddr.setText(daddr);
-                new AsyncTask<String, Object, String>() {
-                    @Override
-                    protected void onPreExecute() {
-                        ViewCompat.setHasTransientState(tvDaddr, true);
-                    }
-
-                    @Override
-                    protected String doInBackground(String... args) {
-                        try {
-                            return InetAddress.getByName(args[0]).getHostName();
-                        } catch (UnknownHostException ignored) {
-                            return args[0];
-                        }
-                    }
-
-                    @Override
-                    protected void onPostExecute(String name) {
-                        tvDaddr.setText(">" + name);
-                        ViewCompat.setHasTransientState(tvDaddr, false);
-                    }
-                }.execute(daddr);
-            } else
-                tvDaddr.setText(dname);
-        else
-            tvDaddr.setText(getKnownAddress(daddr));
-
-        // Show organization
-        tvOrganization.setVisibility(View.GONE);
-        if (!we && organization) {
-            if (!isKnownAddress(daddr))
-                new AsyncTask<String, Object, String>() {
-                    @Override
-                    protected void onPreExecute() {
-                        ViewCompat.setHasTransientState(tvOrganization, true);
-                    }
-
-                    @Override
-                    protected String doInBackground(String... args) {
-                        try {
-                            return Util.getOrganization(args[0]);
-                        } catch (Throwable ex) {
-                            Log.w(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
-                            return null;
-                        }
-                    }
-
-                    @Override
-                    protected void onPostExecute(String organization) {
-                        if (organization != null) {
-                            tvOrganization.setText(organization);
-                            tvOrganization.setVisibility(View.VISIBLE);
-                        }
-                        ViewCompat.setHasTransientState(tvOrganization, false);
-                    }
-                }.execute(daddr);
+        private boolean isKnownAddress(String addr) {
+            try {
+                final InetAddress a = InetAddress.getByName(addr);
+                return !a.equals(dns1) && !a.equals(dns2) && !a.equals(vpn4) && !a.equals(vpn6);
+            } catch (UnknownHostException ignored) {}
+            return true;
         }
 
-        // Show extra data
-        if (TextUtils.isEmpty(data)) {
-            tvData.setText("");
-            tvData.setVisibility(View.GONE);
-        } else {
-            tvData.setText(data);
-            tvData.setVisibility(View.VISIBLE);
+        private String getKnownAddress(String addr) {
+            try {
+                final InetAddress a = InetAddress.getByName(addr);
+                if (a.equals(dns1) || a.equals(dns2)) {
+                    return "dns";
+                }
+                if (a.equals(vpn4) || a.equals(vpn6)) {
+                    return "vpn";
+                }
+            } catch (UnknownHostException ignored) {}
+            return addr;
         }
-    }
 
-    public boolean isKnownAddress(String addr) {
-        try {
-            InetAddress a = InetAddress.getByName(addr);
-            if (a.equals(dns1) || a.equals(dns2) || a.equals(vpn4) || a.equals(vpn6))
-                return true;
-        } catch (UnknownHostException ignored) {
-        }
-        return false;
-    }
-
-    private String getKnownAddress(String addr) {
-        try {
-            InetAddress a = InetAddress.getByName(addr);
-            if (a.equals(dns1) || a.equals(dns2))
-                return "dns";
-            if (a.equals(vpn4) || a.equals(vpn6))
-                return "vpn";
-        } catch (UnknownHostException ignored) {
-        }
-        return addr;
-    }
-
-    private String getKnownPort(int port) {
-        // https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers#Well-known_ports
-        switch (port) {
-            case 7:
-                return "echo";
-            case 25:
-                return "smtp";
-            case 53:
-                return "dns";
-            case 80:
-                return "http";
-            case 110:
-                return "pop3";
-            case 143:
-                return "imap";
-            case 443:
-                return "https";
-            case 465:
-                return "smtps";
-            case 993:
-                return "imaps";
-            case 995:
-                return "pop3s";
-            default:
-                return Integer.toString(port);
+        private String getKnownPort(int port) {
+            // https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers#Well-known_ports
+            switch (port) {
+                case 7:
+                    return "echo";
+                case 25:
+                    return "smtp";
+                case 53:
+                    return "dns";
+                case 80:
+                    return "http";
+                case 110:
+                    return "pop3";
+                case 143:
+                    return "imap";
+                case 443:
+                    return "https";
+                case 465:
+                    return "smtps";
+                case 993:
+                    return "imaps";
+                case 995:
+                    return "pop3s";
+                default:
+                    return String.valueOf(port);
+            }
         }
     }
 }

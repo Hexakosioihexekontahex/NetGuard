@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui.view;
 
 /*
     This file is part of NetGuard.
@@ -21,25 +21,20 @@ package eu.faircode.netguard;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.widget.ListView;
 
-// This requires list view items with equal heights
+// https://code.google.com/p/android/issues/detail?id=26194
 
-public class ExpandedListView extends ListView {
-    public ExpandedListView(Context context) {
-        super(context);
+public class SwitchPreference extends android.preference.SwitchPreference {
+
+    public SwitchPreference(Context context) {
+        this(context, null);
     }
 
-    public ExpandedListView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+    public SwitchPreference(Context context, AttributeSet attrs) {
+        this(context, attrs, android.R.attr.switchPreferenceStyle);
     }
 
-    public ExpandedListView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Integer.MAX_VALUE >> 4, MeasureSpec.AT_MOST));
+    public SwitchPreference(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
     }
 }

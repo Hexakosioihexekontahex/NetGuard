@@ -1,4 +1,4 @@
-package eu.faircode.netguard.ui;
+package eu.faircode.netguard.ui.rules;
 
 /*
     This file is part of NetGuard.
@@ -71,15 +71,17 @@ import android.widget.Toast;
 
 import java.util.List;
 
-import eu.faircode.netguard.DatabaseHelper;
 import eu.faircode.netguard.IAB;
 import eu.faircode.netguard.R;
-import eu.faircode.netguard.ReceiverAutostart;
 import eu.faircode.netguard.Rule;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.bg.ReceiverAutostart;
+import eu.faircode.netguard.db.DatabaseHelper;
+import eu.faircode.netguard.ui.ActivityPro;
 import eu.faircode.netguard.ui.log.ActivityLog;
 import eu.faircode.netguard.ui.remote.WidgetLockdown;
+import eu.faircode.netguard.ui.settings.ActivitySettings;
 
 public class ActivityMain extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "NetGuard.Main";

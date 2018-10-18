@@ -26,6 +26,17 @@ public class Forward {
     public int rport;
     public int ruid;
 
+    public Forward() {
+    }
+
+    public Forward(int protocol, int dport, String raddr, int rport, int ruid) {
+        this.protocol = protocol;
+        this.dport = dport;
+        this.raddr = raddr;
+        this.rport = rport;
+        this.ruid = ruid;
+    }
+
     @Override
     public String toString() {
         return "protocol=" + protocol + " port " + dport + " to " + raddr + "/" + rport + " uid " + ruid;
