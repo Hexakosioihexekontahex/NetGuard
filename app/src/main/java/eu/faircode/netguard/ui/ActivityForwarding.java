@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui;
 
 /*
     This file is part of NetGuard.
@@ -41,6 +41,12 @@ import android.widget.Toast;
 
 import java.net.InetAddress;
 import java.util.List;
+
+import eu.faircode.netguard.DatabaseHelper;
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.Rule;
+import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.Util;
 
 public class ActivityForwarding extends AppCompatActivity {
     private boolean running;

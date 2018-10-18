@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui;
 
 /*
     This file is part of NetGuard.
@@ -41,6 +41,9 @@ import android.widget.TextView;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.Util;
 
 public class AdapterAccess extends CursorAdapter {
     private int colVersion;

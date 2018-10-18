@@ -48,9 +48,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final int DB_VERSION = 21;
 
     private static boolean once = true;
-    private static List<LogChangedListener> logChangedListeners = new ArrayList<>();
-    private static List<AccessChangedListener> accessChangedListeners = new ArrayList<>();
-    private static List<ForwardChangedListener> forwardChangedListeners = new ArrayList<>();
+    private static final List<LogChangedListener> logChangedListeners = new ArrayList<>();
+    private static final List<AccessChangedListener> accessChangedListeners = new ArrayList<>();
+    private static final List<ForwardChangedListener> forwardChangedListeners = new ArrayList<>();
 
     private static HandlerThread hthread = null;
     private static Handler handler = null;

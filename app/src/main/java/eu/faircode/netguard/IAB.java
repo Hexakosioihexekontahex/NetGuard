@@ -39,6 +39,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import eu.faircode.netguard.ui.ActivityPro;
+
 public class IAB implements ServiceConnection {
     private static final String TAG = "NetGuard.IAB";
 

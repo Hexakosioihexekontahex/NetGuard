@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui;
 
 /*
     This file is part of NetGuard.
@@ -41,6 +41,10 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import eu.faircode.netguard.IAB;
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.Util;
 
 public class ActivityPro extends AppCompatActivity {
     private static final String TAG = "NetGuard.Pro";

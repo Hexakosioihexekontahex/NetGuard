@@ -25,6 +25,7 @@ import android.util.AttributeSet;
 // https://code.google.com/p/android/issues/detail?id=26194
 
 public class SwitchPreference extends android.preference.SwitchPreference {
+
     public SwitchPreference(Context context) {
         this(context, null);
     }

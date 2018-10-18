@@ -60,20 +60,20 @@ public class ServiceExternal extends IntentService {
             if (ACTION_DOWNLOAD_HOSTS_FILE.equals(intent.getAction())) {
                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-                String hosts_url = prefs.getString("hosts_url", null);
-                File tmp = new File(getFilesDir(), "hosts.tmp");
-                File hosts = new File(getFilesDir(), "hosts.txt");
+                final String hosts_url = prefs.getString("hosts_url", null);
+                final File tmp = new File(getFilesDir(), "hosts.tmp");
+                final File hosts = new File(getFilesDir(), "hosts.txt");
 
                 InputStream in = null;
                 OutputStream out = null;
                 URLConnection connection = null;
                 try {
-                    URL url = new URL(hosts_url);
+                    final URL url = new URL(hosts_url);
                     connection = url.openConnection();
                     connection.connect();
 
                     if (connection instanceof HttpURLConnection) {
-                        HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                        final HttpURLConnection httpConnection = (HttpURLConnection) connection;
                         if (httpConnection.getResponseCode() != HttpURLConnection.HTTP_OK)
                             throw new IOException(httpConnection.getResponseCode() + " " + httpConnection.getResponseMessage());
                     }
@@ -93,30 +93,33 @@ public class ServiceExternal extends IntentService {
 
                     Log.i(TAG, "Downloaded size=" + size);
 
-                    if (hosts.exists())
+                    if (hosts.exists()) {
                         hosts.delete();
+                    }
                     tmp.renameTo(hosts);
 
-                    String last = SimpleDateFormat.getDateTimeInstance().format(new Date().getTime());
+                    final String last = SimpleDateFormat.getDateTimeInstance().format(new Date().getTime());
                     prefs.edit().putString("hosts_last_download", last).apply();
 
                     ServiceSinkhole.reload("hosts file download", this, false);
-
-                } catch (Throwable ex) {
+                }
+                catch (Throwable ex) {
                     Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
-
-                    if (tmp.exists())
+                    if (tmp.exists()) {
                         tmp.delete();
+                    }
                 } finally {
                     try {
-                        if (out != null)
+                        if (out != null) {
                             out.close();
+                        }
                     } catch (IOException ex) {
                         Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
                     try {
-                        if (in != null)
+                        if (in != null) {
                             in.close();
+                        }
                     } catch (IOException ex) {
                         Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
@@ -131,7 +134,7 @@ public class ServiceExternal extends IntentService {
     }
 
     private static Notification getForegroundNotification(Context context) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "foreground");
+        final NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "foreground");
         builder.setSmallIcon(R.drawable.ic_hourglass_empty_white_24dp);
         builder.setPriority(NotificationCompat.PRIORITY_MIN);
         builder.setCategory(NotificationCompat.CATEGORY_STATUS);

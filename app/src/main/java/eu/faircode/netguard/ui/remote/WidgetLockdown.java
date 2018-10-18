@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui.remote;
 
 /*
     This file is part of NetGuard.
@@ -29,6 +29,8 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
+
+import eu.faircode.netguard.R;
 
 public class WidgetLockdown extends AppWidgetProvider {
     private static final String TAG = "NetGuard.WidgetLock";

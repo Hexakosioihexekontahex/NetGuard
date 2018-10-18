@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui.log;
 
 /*
     This file is part of NetGuard.
@@ -41,12 +41,15 @@ import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+
+import eu.faircode.netguard.GlideApp;
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.Util;
 
 public class AdapterLog extends CursorAdapter {
     private static String TAG = "NetGuard.Log";

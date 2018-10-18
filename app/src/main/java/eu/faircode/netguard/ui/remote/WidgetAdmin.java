@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui.remote;
 
 /*
     This file is part of NetGuard.
@@ -31,6 +31,10 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.util.Date;
+
+import eu.faircode.netguard.ReceiverAutostart;
+import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.Util;
 
 public class WidgetAdmin extends ReceiverAutostart {
     private static final String TAG = "NetGuard.Widget";

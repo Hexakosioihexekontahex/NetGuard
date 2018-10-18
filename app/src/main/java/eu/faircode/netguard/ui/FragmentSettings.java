@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui;
 
 /*
     This file is part of NetGuard.
@@ -21,6 +21,8 @@ package eu.faircode.netguard;
 
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
+
+import eu.faircode.netguard.R;
 
 public class FragmentSettings extends PreferenceFragment {
 

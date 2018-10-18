@@ -35,6 +35,8 @@ import android.util.Log;
 
 import java.util.Date;
 
+import eu.faircode.netguard.ui.remote.WidgetAdmin;
+
 @TargetApi(Build.VERSION_CODES.N)
 public class ServiceTileMain extends TileService implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "NetGuard.TileMain";

@@ -86,7 +86,11 @@ import java.util.Set;
 
 public class Util {
     private static final String TAG = "NetGuard.Util";
+    private static final Map<String, String> mapIPOrganization = new HashMap<>();
 
+    public interface DoubtListener {
+        void onSure();
+    }
     // Roam like at home
     private static final List<String> listEU = Arrays.asList(
             "AT", // Austria
@@ -136,7 +140,7 @@ public class Util {
 
     public static String getSelfVersionName(Context context) {
         try {
-            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            final PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             return pInfo.versionName;
         } catch (PackageManager.NameNotFoundException ex) {
             return ex.toString();
@@ -145,7 +149,7 @@ public class Util {
 
     public static int getSelfVersionCode(Context context) {
         try {
-            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            final PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             return pInfo.versionCode;
         } catch (PackageManager.NameNotFoundException ex) {
             return -1;
@@ -153,54 +157,57 @@ public class Util {
     }
 
     public static boolean isNetworkActive(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        return (cm == null ? false : cm.getActiveNetworkInfo() != null);
+        final ConnectivityManager cm = getConnectivityManager(context);
+        return cm != null && cm.getActiveNetworkInfo() != null;
+    }
+
+    private static ConnectivityManager getConnectivityManager(Context context) {
+        return (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+    }
+
+    private static NetworkInfo getNetworkInfo(ConnectivityManager cm) {
+        return cm == null ? null : cm.getActiveNetworkInfo();
     }
 
     public static boolean isConnected(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = (cm == null ? null : cm.getActiveNetworkInfo());
+        final NetworkInfo ni = getNetworkInfo(getConnectivityManager(context));
         return (ni != null && ni.isConnected());
     }
 
     public static boolean isWifiActive(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = (cm == null ? null : cm.getActiveNetworkInfo());
+        final NetworkInfo ni = getNetworkInfo(getConnectivityManager(context));
         return (ni != null && ni.getType() == ConnectivityManager.TYPE_WIFI);
     }
 
     public static boolean isMeteredNetwork(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final ConnectivityManager cm = getConnectivityManager(context);
         return (cm != null && ConnectivityManagerCompat.isActiveNetworkMetered(cm));
     }
 
     public static String getWifiSSID(Context context) {
-        WifiManager wm = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        String ssid = (wm == null ? null : wm.getConnectionInfo().getSSID());
+        final WifiManager wm = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        final String ssid = (wm == null ? null : wm.getConnectionInfo().getSSID());
         return (ssid == null ? "NULL" : ssid);
     }
 
     public static int getNetworkType(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = (cm == null ? null : cm.getActiveNetworkInfo());
+        final NetworkInfo ni = getNetworkInfo(getConnectivityManager(context));
         return (ni == null ? TelephonyManager.NETWORK_TYPE_UNKNOWN : ni.getSubtype());
     }
 
     public static String getNetworkGeneration(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
+        final NetworkInfo ni = getNetworkInfo(getConnectivityManager(context));
         return (ni != null && ni.getType() == ConnectivityManager.TYPE_MOBILE ? getNetworkGeneration(ni.getSubtype()) : null);
     }
 
     public static boolean isRoaming(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = (cm == null ? null : cm.getActiveNetworkInfo());
+        final NetworkInfo ni = getNetworkInfo(getConnectivityManager(context));
         return (ni != null && ni.isRoaming());
     }
 
     public static boolean isNational(Context context) {
         try {
-            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            final TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             return (tm != null && tm.getSimCountryIso() != null && tm.getSimCountryIso().equals(tm.getNetworkCountryIso()));
         } catch (Throwable ignored) {
             return false;
@@ -209,7 +216,7 @@ public class Util {
 
     public static boolean isEU(Context context) {
         try {
-            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            final TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             return (tm != null && isEU(tm.getSimCountryIso()) && isEU(tm.getNetworkCountryIso()));
         } catch (Throwable ignored) {
             return false;
@@ -252,43 +259,47 @@ public class Util {
     }
 
     public static boolean hasPhoneStatePermission(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            return (context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED);
-        else
-            return true;
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
     }
 
     public static List<String> getDefaultDNS(Context context) {
         String dns1 = null;
         String dns2 = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            Network an = cm.getActiveNetwork();
+            final ConnectivityManager cm = getConnectivityManager(context);
+            final Network an = cm.getActiveNetwork();
             if (an != null) {
                 LinkProperties lp = cm.getLinkProperties(an);
                 if (lp != null) {
-                    List<InetAddress> dns = lp.getDnsServers();
+                    final List<InetAddress> dns = lp.getDnsServers();
                     if (dns != null) {
-                        if (dns.size() > 0)
+                        if (dns.size() > 0) {
                             dns1 = dns.get(0).getHostAddress();
-                        if (dns.size() > 1)
+                        }
+                        if (dns.size() > 1) {
                             dns2 = dns.get(1).getHostAddress();
-                        for (InetAddress d : dns)
-                            Log.i(TAG, "DNS from LP: " + d.getHostAddress());
+                        }
+                        if(BuildConfig.DEBUG) {
+                            for (InetAddress d : dns)
+                                Log.i(TAG, "DNS from LP: " + d.getHostAddress());
+                        }
                     }
                 }
             }
-        } else {
+        }
+        else {
             dns1 = jni_getprop("net.dns1");
             dns2 = jni_getprop("net.dns2");
         }
 
-        if (!TextUtils.isEmpty(dns1))
+        if (!TextUtils.isEmpty(dns1)) {
             dns1 = dns1.split("%")[0];
-        if (!TextUtils.isEmpty(dns2))
+        }
+        if (!TextUtils.isEmpty(dns2)) {
             dns2 = dns2.split("%")[0];
+        }
 
-        List<String> listDns = new ArrayList<>();
+        final List<String> listDns = new ArrayList<>();
         listDns.add(TextUtils.isEmpty(dns1) ? "8.8.8.8" : dns1);
         listDns.add(TextUtils.isEmpty(dns2) ? "8.8.4.4" : dns2);
         return listDns;
@@ -299,11 +310,13 @@ public class Util {
     }
 
     public static boolean isInteractive(Context context) {
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH)
+        final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH) {
             return (pm != null && pm.isScreenOn());
-        else
+        }
+        else {
             return (pm != null && pm.isInteractive());
+        }
     }
 
     public static boolean isPackageInstalled(String packageName, Context context) {
@@ -316,81 +329,83 @@ public class Util {
     }
 
     public static boolean isSystem(int uid, Context context) {
-        PackageManager pm = context.getPackageManager();
-        String[] pkgs = pm.getPackagesForUid(uid);
+        final PackageManager pm = context.getPackageManager();
+        final String[] pkgs = pm.getPackagesForUid(uid);
         if (pkgs != null)
-            for (String pkg : pkgs)
-                if (isSystem(pkg, context))
+            for (String pkg : pkgs) {
+                if (isSystem(pkg, context)) {
                     return true;
+                }
+            }
         return false;
     }
 
     public static boolean isSystem(String packageName, Context context) {
         try {
-            PackageManager pm = context.getPackageManager();
-            PackageInfo info = pm.getPackageInfo(packageName, 0);
+            final PackageManager pm = context.getPackageManager();
+            final PackageInfo info = pm.getPackageInfo(packageName, 0);
             return ((info.applicationInfo.flags & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0);
-            /*
-            PackageInfo pkg = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
-            PackageInfo sys = pm.getPackageInfo("android", PackageManager.GET_SIGNATURES);
-            return (pkg != null && pkg.signatures != null && pkg.signatures.length > 0 &&
-                    sys.signatures.length > 0 && sys.signatures[0].equals(pkg.signatures[0]));
-            */
         } catch (PackageManager.NameNotFoundException ignore) {
             return false;
         }
     }
 
     public static boolean hasInternet(String packageName, Context context) {
-        PackageManager pm = context.getPackageManager();
+        final PackageManager pm = context.getPackageManager();
         return (pm.checkPermission("android.permission.INTERNET", packageName) == PackageManager.PERMISSION_GRANTED);
     }
 
     public static boolean hasInternet(int uid, Context context) {
-        PackageManager pm = context.getPackageManager();
-        String[] pkgs = pm.getPackagesForUid(uid);
-        if (pkgs != null)
-            for (String pkg : pkgs)
-                if (hasInternet(pkg, context))
+        final PackageManager pm = context.getPackageManager();
+        final String[] pkgs = pm.getPackagesForUid(uid);
+        if (pkgs != null) {
+            for (String pkg : pkgs) {
+                if (hasInternet(pkg, context)) {
                     return true;
+                }
+            }
+        }
         return false;
     }
 
     public static boolean isEnabled(PackageInfo info, Context context) {
         int setting;
         try {
-            PackageManager pm = context.getPackageManager();
+            final PackageManager pm = context.getPackageManager();
             setting = pm.getApplicationEnabledSetting(info.packageName);
         } catch (IllegalArgumentException ex) {
             setting = PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
             Log.w(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
-        if (setting == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
-            return info.applicationInfo.enabled;
-        else
-            return (setting == PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
+        return setting == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT ? info.applicationInfo.enabled : setting == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
     }
 
     public static List<String> getApplicationNames(int uid, Context context) {
-        List<String> listResult = new ArrayList<>();
-        if (uid == 0)
+        final List<String> listResult = new ArrayList<>();
+        if (uid == 0) {
             listResult.add(context.getString(R.string.title_root));
-        else if (uid == 1013)
+        }
+        else if (uid == 1013) {
             listResult.add(context.getString(R.string.title_mediaserver));
-        else if (uid == 9999)
+        }
+        else if (uid == 9999) {
             listResult.add(context.getString(R.string.title_nobody));
+        }
         else {
-            PackageManager pm = context.getPackageManager();
-            String[] pkgs = pm.getPackagesForUid(uid);
-            if (pkgs == null)
+            final PackageManager pm = context.getPackageManager();
+            final String[] pkgs = pm.getPackagesForUid(uid);
+            if (pkgs == null) {
                 listResult.add(Integer.toString(uid));
-            else
-                for (String pkg : pkgs)
+            }
+            else {
+                for (String pkg : pkgs) {
                     try {
                         ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
                         listResult.add(pm.getApplicationLabel(info).toString());
                     } catch (PackageManager.NameNotFoundException ignored) {
                     }
+                }
+            }
             Collections.sort(listResult);
         }
         return listResult;
@@ -398,8 +413,8 @@ public class Util {
 
     public static boolean canFilter(Context context) {
         // https://android-review.googlesource.com/#/c/206710/1/untrusted_app.te
-        File tcp = new File("/proc/net/tcp");
-        File tcp6 = new File("/proc/net/tcp6");
+        final File tcp = new File("/proc/net/tcp");
+        final File tcp6 = new File("/proc/net/tcp6");
         try {
             if (tcp.exists() && tcp.canRead())
                 return true;
@@ -435,25 +450,29 @@ public class Util {
     }
 
     public static boolean ownFault(Context context, Throwable ex) {
-        if (ex instanceof OutOfMemoryError)
+        if (ex instanceof OutOfMemoryError) {
             return false;
-        if (ex.getCause() != null)
+        }
+        if (ex.getCause() != null) {
             ex = ex.getCause();
-        for (StackTraceElement ste : ex.getStackTrace())
-            if (ste.getClassName().startsWith(context.getPackageName()))
+        }
+        for (StackTraceElement ste : ex.getStackTrace()) {
+            if (ste.getClassName().startsWith(context.getPackageName())) {
                 return true;
+            }
+        }
         return false;
     }
 
     public static String getFingerprint(Context context) {
         try {
-            PackageManager pm = context.getPackageManager();
-            String pkg = context.getPackageName();
-            PackageInfo info = pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES);
-            byte[] cert = info.signatures[0].toByteArray();
-            MessageDigest digest = MessageDigest.getInstance("SHA1");
-            byte[] bytes = digest.digest(cert);
-            StringBuilder sb = new StringBuilder();
+            final PackageManager pm = context.getPackageManager();
+            final String pkg = context.getPackageName();
+            final PackageInfo info = pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES);
+            final byte[] cert = info.signatures[0].toByteArray();
+            final MessageDigest digest = MessageDigest.getInstance("SHA1");
+            final byte[] bytes = digest.digest(cert);
+            final StringBuilder sb = new StringBuilder();
             for (byte b : bytes)
                 sb.append(Integer.toString(b & 0xff, 16).toLowerCase());
             return sb.toString();
@@ -464,27 +483,33 @@ public class Util {
     }
 
     public static boolean hasValidFingerprint(Context context) {
-        String calculated = getFingerprint(context);
-        String expected = context.getString(R.string.fingerprint);
+        final String calculated = getFingerprint(context);
+        final String expected = context.getString(R.string.fingerprint);
         return (calculated != null && calculated.equals(expected));
     }
 
     public static void setTheme(Context context) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean dark = prefs.getBoolean("dark_theme", false);
-        String theme = prefs.getString("theme", "teal");
-        if (theme.equals("teal"))
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        final boolean dark = prefs.getBoolean("dark_theme", false);
+        final String theme = prefs.getString("theme", "teal");
+        if (theme.equals("teal")) {
             context.setTheme(dark ? R.style.AppThemeTealDark : R.style.AppThemeTeal);
-        else if (theme.equals("blue"))
+        }
+        else if (theme.equals("blue")) {
             context.setTheme(dark ? R.style.AppThemeBlueDark : R.style.AppThemeBlue);
-        else if (theme.equals("purple"))
+        }
+        else if (theme.equals("purple")) {
             context.setTheme(dark ? R.style.AppThemePurpleDark : R.style.AppThemePurple);
-        else if (theme.equals("amber"))
+        }
+        else if (theme.equals("amber")) {
             context.setTheme(dark ? R.style.AppThemeAmberDark : R.style.AppThemeAmber);
-        else if (theme.equals("orange"))
+        }
+        else if (theme.equals("orange")) {
             context.setTheme(dark ? R.style.AppThemeOrangeDark : R.style.AppThemeOrange);
-        else if (theme.equals("green"))
+        }
+        else if (theme.equals("green")) {
             context.setTheme(dark ? R.style.AppThemeGreenDark : R.style.AppThemeGreen);
+        }
 
         if (context instanceof Activity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             setTaskColor(context);
@@ -492,7 +517,7 @@ public class Util {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private static void setTaskColor(Context context) {
-        TypedValue tv = new TypedValue();
+        final TypedValue tv = new TypedValue();
         context.getTheme().resolveAttribute(R.attr.colorPrimary, tv, true);
         ((Activity) context).setTaskDescription(new ActivityManager.TaskDescription(null, null, tv.data));
     }
@@ -501,27 +526,26 @@ public class Util {
         return Math.round(dips * context.getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    private static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
-        int height = options.outHeight;
-        int width = options.outWidth;
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
         int inSampleSize = 1;
 
         if (height > reqHeight || width > reqWidth) {
             int halfHeight = height / 2;
             int halfWidth = width / 2;
 
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth)
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
                 inSampleSize *= 2;
+            }
         }
 
         return inSampleSize;
     }
 
-    public static Bitmap decodeSampledBitmapFromResource(
-            Resources resources, int resourceId, int reqWidth, int reqHeight) {
+    public static Bitmap decodeSampledBitmapFromResource(Resources resources, int resourceId, int reqWidth, int reqHeight) {
 
-        BitmapFactory.Options options = new BitmapFactory.Options();
+        final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeResource(resources, resourceId, options);
         options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
@@ -566,14 +590,10 @@ public class Util {
         return ((brief ? b : p) + (version > 0 ? version : ""));
     }
 
-    public interface DoubtListener {
-        void onSure();
-    }
-
     public static void areYouSure(Context context, int explanation, final DoubtListener listener) {
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View view = inflater.inflate(R.layout.sure, null, false);
-        TextView tvExplanation = view.findViewById(R.id.tvExplanation);
+        final LayoutInflater inflater = LayoutInflater.from(context);
+        final View view = inflater.inflate(R.layout.sure, null, false);
+        final TextView tvExplanation = view.findViewById(R.id.tvExplanation);
         tvExplanation.setText(explanation);
         new AlertDialog.Builder(context)
                 .setView(view)
@@ -593,8 +613,6 @@ public class Util {
                 .create().show();
     }
 
-    private static final Map<String, String> mapIPOrganization = new HashMap<>();
-
     public static String getOrganization(String ip) throws Exception {
         synchronized (mapIPOrganization) {
             if (mapIPOrganization.containsKey(ip))
@@ -602,8 +620,8 @@ public class Util {
         }
         BufferedReader reader = null;
         try {
-            URL url = new URL("https://ipinfo.io/" + ip + "/org");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            final URL url = new URL("https://ipinfo.io/" + ip + "/org");
+            final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setReadTimeout(15 * 1000);
             connection.connect();
@@ -623,8 +641,8 @@ public class Util {
 
     public static String md5(String text, String salt) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         // MD5
-        byte[] bytes = MessageDigest.getInstance("MD5").digest((text + salt).getBytes("UTF-8"));
-        StringBuilder sb = new StringBuilder();
+        final byte[] bytes = MessageDigest.getInstance("MD5").digest((text + salt).getBytes("UTF-8"));
+        final StringBuilder sb = new StringBuilder();
         for (byte b : bytes)
             sb.append(String.format("%02X", b));
         return sb.toString();
@@ -637,8 +655,8 @@ public class Util {
 
     public static void logBundle(Bundle data) {
         if (data != null) {
-            Set<String> keys = data.keySet();
-            StringBuilder stringBuilder = new StringBuilder();
+            final Set<String> keys = data.keySet();
+            final StringBuilder stringBuilder = new StringBuilder();
             for (String key : keys) {
                 Object value = data.get(key);
                 stringBuilder.append(key)
@@ -652,8 +670,8 @@ public class Util {
     }
 
     public static StringBuilder readString(InputStreamReader reader) {
-        StringBuilder sb = new StringBuilder(2048);
-        char[] read = new char[128];
+        final StringBuilder sb = new StringBuilder(2048);
+        final char[] read = new char[128];
         try {
             for (int i; (i = reader.read(read)) >= 0; sb.append(read, 0, i)) ;
         } catch (Throwable ex) {
@@ -667,23 +685,23 @@ public class Util {
             return;
 
         try {
-            ApplicationErrorReport report = new ApplicationErrorReport();
+            final ApplicationErrorReport report = new ApplicationErrorReport();
             report.packageName = report.processName = context.getPackageName();
             report.time = System.currentTimeMillis();
             report.type = ApplicationErrorReport.TYPE_CRASH;
             report.systemApp = false;
 
-            ApplicationErrorReport.CrashInfo crash = new ApplicationErrorReport.CrashInfo();
+            final ApplicationErrorReport.CrashInfo crash = new ApplicationErrorReport.CrashInfo();
             crash.exceptionClassName = ex.getClass().getSimpleName();
             crash.exceptionMessage = ex.getMessage();
 
-            StringWriter writer = new StringWriter();
-            PrintWriter printer = new PrintWriter(writer);
+            final StringWriter writer = new StringWriter();
+            final PrintWriter printer = new PrintWriter(writer);
             ex.printStackTrace(printer);
 
             crash.stackTrace = writer.toString();
 
-            StackTraceElement stack = ex.getStackTrace()[0];
+            final StackTraceElement stack = ex.getStackTrace()[0];
             crash.throwClassName = stack.getClassName();
             crash.throwFileName = stack.getFileName();
             crash.throwLineNumber = stack.getLineNumber();
@@ -702,8 +720,8 @@ public class Util {
     }
 
     public static String getGeneralInfo(Context context) {
-        StringBuilder sb = new StringBuilder();
-        TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        final StringBuilder sb = new StringBuilder();
+        final TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
         sb.append(String.format("Interactive %B\r\n", isInteractive(context)));
         sb.append(String.format("Connected %B\r\n", isConnected(context)));
@@ -731,11 +749,11 @@ public class Util {
     }
 
     public static String getNetworkInfo(Context context) {
-        StringBuilder sb = new StringBuilder();
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final StringBuilder sb = new StringBuilder();
+        final ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        NetworkInfo ani = cm.getActiveNetworkInfo();
-        List<NetworkInfo> listNI = new ArrayList<>();
+        final NetworkInfo ani = getNetworkInfo(cm);
+        final List<NetworkInfo> listNI = new ArrayList<>();
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
             listNI.addAll(Arrays.asList(cm.getAllNetworkInfo()));
@@ -757,7 +775,7 @@ public class Util {
         }
 
         try {
-            Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+            final Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
             if (nis != null)
                 while (nis.hasMoreElements()) {
                     NetworkInterface ni = nis.nextElement();
@@ -785,21 +803,21 @@ public class Util {
 
     @TargetApi(Build.VERSION_CODES.M)
     public static boolean batteryOptimizing(Context context) {
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         return !pm.isIgnoringBatteryOptimizations(context.getPackageName());
     }
 
     @TargetApi(Build.VERSION_CODES.N)
     public static boolean dataSaving(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         return (cm.getRestrictBackgroundStatus() == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED);
     }
 
     public static void sendLogcat(final Uri uri, final Context context) {
-        AsyncTask task = new AsyncTask<Object, Object, Intent>() {
+        final AsyncTask task = new AsyncTask<Object, Object, Intent>() {
             @Override
             protected Intent doInBackground(Object... objects) {
-                StringBuilder sb = new StringBuilder();
+                final StringBuilder sb = new StringBuilder();
                 sb.append(context.getString(R.string.msg_issue));
                 sb.append("\r\n\r\n\r\n\r\n");
 
@@ -874,8 +892,8 @@ public class Util {
                 }
 
                 // Get settings
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-                Map<String, ?> all = prefs.getAll();
+                final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+                final Map<String, ?> all = prefs.getAll();
                 for (String key : all.keySet())
                     sb.append("Setting: ").append(key).append('=').append(all.get(key)).append("\r\n");
                 sb.append("\r\n");
@@ -899,7 +917,7 @@ public class Util {
                 }
 
                 // Build intent
-                Intent sendEmail = new Intent(Intent.ACTION_SEND);
+                final Intent sendEmail = new Intent(Intent.ACTION_SEND);
                 sendEmail.setType("message/rfc822");
                 sendEmail.putExtra(Intent.EXTRA_EMAIL, new String[]{"marcel+netguard@faircode.eu"});
                 sendEmail.putExtra(Intent.EXTRA_SUBJECT, "NetGuard " + version + " logcat");
@@ -922,9 +940,8 @@ public class Util {
     }
 
     private static StringBuilder getTrafficLog(Context context) {
-        StringBuilder sb = new StringBuilder();
-
-        Cursor cursor = DatabaseHelper.getInstance(context).getLog(true, true, true, true, true);
+        final StringBuilder sb = new StringBuilder();
+        final Cursor cursor = DatabaseHelper.getInstance(context).getLog(true, true, true, true, true);
 
         int colTime = cursor.getColumnIndex("time");
         int colVersion = cursor.getColumnIndex("version");
@@ -941,7 +958,7 @@ public class Util {
         int colConnection = cursor.getColumnIndex("connection");
         int colInteractive = cursor.getColumnIndex("interactive");
 
-        DateFormat format = SimpleDateFormat.getDateTimeInstance();
+        final DateFormat format = SimpleDateFormat.getDateTimeInstance();
 
         int count = 0;
         while (cursor.moveToNext() && ++count < 250) {
@@ -967,12 +984,12 @@ public class Util {
     }
 
     private static StringBuilder getLogcat() {
-        StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
         Process process1 = null;
         Process process2 = null;
         BufferedReader br = null;
         try {
-            String[] command1 = new String[]{"logcat", "-d", "-v", "threadtime"};
+            final String[] command1 = new String[]{"logcat", "-d", "-v", "threadtime"};
             process1 = Runtime.getRuntime().exec(command1);
             br = new BufferedReader(new InputStreamReader(process1.getInputStream()));
             int count = 0;

@@ -1,4 +1,4 @@
-package eu.faircode.netguard;
+package eu.faircode.netguard.ui;
 
 /*
     This file is part of NetGuard.
@@ -27,6 +27,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
+
+import eu.faircode.netguard.R;
+import eu.faircode.netguard.Util;
 
 public class AdapterForwarding extends CursorAdapter {
     private int colProtocol;
