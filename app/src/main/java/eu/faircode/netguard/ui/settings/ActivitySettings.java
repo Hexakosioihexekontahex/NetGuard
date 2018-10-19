@@ -100,7 +100,7 @@ import eu.faircode.netguard.bg.ReceiverAutostart;
 import eu.faircode.netguard.db.DatabaseHelper;
 import eu.faircode.netguard.ui.ActivityPro;
 import eu.faircode.netguard.ui.FragmentSettings;
-import eu.faircode.netguard.ui.dns.ActivityDns;
+import eu.faircode.netguard.ui.ListFragmentActivity;
 import eu.faircode.netguard.ui.forwarding.ActivityForwarding;
 import eu.faircode.netguard.ui.rules.ActivityMain;
 
@@ -242,14 +242,19 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
         // VPN parameters
         screen.findPreference("vpn4").setTitle(getString(R.string.setting_vpn4, prefs.getString("vpn4", "10.1.10.1")));
         screen.findPreference("vpn6").setTitle(getString(R.string.setting_vpn6, prefs.getString("vpn6", "fd00:1:fd00:1:fd00:1:fd00:1")));
-        EditTextPreference pref_dns1 = (EditTextPreference) screen.findPreference("dns");
-        EditTextPreference pref_dns2 = (EditTextPreference) screen.findPreference("dns2");
-        EditTextPreference pref_ttl = (EditTextPreference) screen.findPreference("ttl");
-        List<String> def_dns = Util.getDefaultDNS(this);
-        pref_dns1.getEditText().setHint(def_dns.get(0));
-        pref_dns2.getEditText().setHint(def_dns.get(1));
-        pref_dns1.setTitle(getString(R.string.setting_dns, prefs.getString("dns", def_dns.get(0))));
-        pref_dns2.setTitle(getString(R.string.setting_dns, prefs.getString("dns2", def_dns.get(1))));
+        final EditTextPreference pref_dns1 = (EditTextPreference) screen.findPreference("item_dns");
+        final EditTextPreference pref_dns2 = (EditTextPreference) screen.findPreference("dns2");
+        final EditTextPreference pref_ttl = (EditTextPreference) screen.findPreference("ttl");
+        final List<String> def_dns = Util.getDefaultDNS(this);
+        if(pref_dns1 != null && pref_dns1.getEditText() != null && def_dns.size() >= 1) {
+            pref_dns1.getEditText().setHint(def_dns.get(0));
+            pref_dns1.setTitle(getString(R.string.setting_dns, prefs.getString("item_dns", def_dns.get(0))));
+        }
+        if(pref_dns2 != null && pref_dns2.getEditText() != null && def_dns.size() >= 2) {
+            pref_dns2.getEditText().setHint(def_dns.get(1));
+            pref_dns2.setTitle(getString(R.string.setting_dns, prefs.getString("dns2", def_dns.get(1))));
+        }
+
         pref_ttl.setTitle(getString(R.string.setting_ttl, prefs.getString("ttl", "259200")));
 
         // SOCKS5 parameters
