@@ -36,7 +36,6 @@ import java.util.Locale;
 import eu.faircode.netguard.IPrefs;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.dto.DnsItem;
-import eu.faircode.netguard.parser.DnsParser;
 import eu.faircode.netguard.parser.ICursorParser;
 
 public class AdapterDns extends CursorAdapter {
@@ -44,9 +43,9 @@ public class AdapterDns extends CursorAdapter {
     private final int colorExpired;
     private final ICursorParser<DnsItem> parser;
 
-    AdapterDns(Context context, Cursor cursor) {
+    AdapterDns(Context context, Cursor cursor, ICursorParser<DnsItem> parser) {
         super(context, cursor, 0);
-
+        this.parser = parser;
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         if (prefs.getBoolean(IPrefs.KEY_THEME_DARK, false)) {
             colorExpired = Color.argb(128, Color.red(Color.DKGRAY), Color.green(Color.DKGRAY), Color.blue(Color.DKGRAY));
@@ -54,14 +53,12 @@ public class AdapterDns extends CursorAdapter {
         else {
             colorExpired = Color.argb(128, Color.red(Color.LTGRAY), Color.green(Color.LTGRAY), Color.blue(Color.LTGRAY));
         }
-
-        parser = new DnsParser(cursor);
     }
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        final View v = LayoutInflater.from(context).inflate(R.layout.dns, parent, false);
-        v.setTag(new DnsVH(v));
+        final View v = LayoutInflater.from(context).inflate(R.layout.item_dns, parent, false);
+        new DnsVH(v);
         return v;
     }
 
@@ -86,6 +83,7 @@ public class AdapterDns extends CursorAdapter {
             tvAName = view.findViewById(R.id.tvAName);
             tvResource = view.findViewById(R.id.tvResource);
             tvTTL = view.findViewById(R.id.tvTTL);
+            view.setTag(this);
         }
 
         void bindItem(Context context, Cursor cursor) {

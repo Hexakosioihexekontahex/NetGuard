@@ -3,6 +3,9 @@ package eu.faircode.netguard.ui.dns;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import java.lang.ref.WeakReference;
+
+import eu.faircode.netguard.ApplicationEx;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.db.DatabaseHelper;
 
@@ -12,22 +15,25 @@ import eu.faircode.netguard.db.DatabaseHelper;
  */
 public class ClearDnsTask extends AsyncTask<Object, Object, Object> {
 
-    private final ActivityDns activity;
+    private final WeakReference<ITaskListener> listener;
 
-    ClearDnsTask(ActivityDns activityDns) {
-        this.activity = activityDns;
+    ClearDnsTask(ITaskListener listener) {
+        this.listener = new WeakReference<>(listener);
     }
 
     @Override
     protected Long doInBackground(Object... objects) {
-        Log.i(ActivityDns.TAG, "Clear DNS");
-        DatabaseHelper.getInstance(activity).clearDns();
+        Log.i(DnsFragment.TAG, "Clear DNS");
+        DatabaseHelper.getInstance(ApplicationEx.getInstance()).clearDns();
         return null;
     }
 
     @Override
     protected void onPostExecute(Object result) {
-        ServiceSinkhole.reload("DNS clear", activity, false);
-        activity.updateAdapter();
+        ServiceSinkhole.reload("DNS clear", ApplicationEx.getInstance(), false);
+        final ITaskListener listener = this.listener.get();
+        if(listener != null) {
+            listener.updateAdapter();
+        }
     }
 }

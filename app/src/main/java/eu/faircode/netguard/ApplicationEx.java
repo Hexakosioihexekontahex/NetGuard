@@ -32,10 +32,12 @@ public class ApplicationEx extends Application {
     private static final String TAG = "NetGuard.App";
 
     private Thread.UncaughtExceptionHandler mPrevHandler;
+    private static ApplicationEx instance;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
         Log.i(TAG, "Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -72,5 +74,9 @@ public class ApplicationEx extends Application {
         NotificationChannel access = new NotificationChannel("access", getString(R.string.channel_access), NotificationManager.IMPORTANCE_DEFAULT);
         access.setSound(null, Notification.AUDIO_ATTRIBUTES_DEFAULT);
         nm.createNotificationChannel(access);
+    }
+
+    public static ApplicationEx getInstance() {
+        return instance;
     }
 }

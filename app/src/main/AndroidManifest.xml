@@ -121,16 +121,6 @@
         </activity>
 
         <activity
-            android:name=".ui.dns.ActivityDns"
-            android:configChanges="orientation|screenSize"
-            android:label="@string/setting_show_resolved"
-            android:parentActivityName=".ui.settings.ActivitySettings">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".ui.settings.ActivitySettings" />
-        </activity>
-
-        <activity
             android:name=".ui.forwarding.ActivityForwarding"
             android:configChanges="orientation|screenSize"
             android:label="@string/setting_forwarding"
@@ -150,6 +140,9 @@
                 <action android:name="eu.faircode.netguard.STOP_PORT_FORWARD" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".ui.ListFragmentActivity"
+            android:configChanges="orientation|screenSize"/>
 
         <service
             android:name=".ServiceSinkhole"

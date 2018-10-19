@@ -278,7 +278,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
             pref_show_resolved.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
-                    startActivity(new Intent(ActivitySettings.this, ActivityDns.class));
+                    startActivity(ListFragmentActivity.newIntentDns(ActivitySettings.this));
                     return true;
                 }
             });
