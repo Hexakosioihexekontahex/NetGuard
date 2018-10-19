@@ -44,7 +44,6 @@ import android.widget.CompoundButton;
 import android.widget.FilterQueryProvider;
 import android.widget.ListView;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -62,7 +61,9 @@ import eu.faircode.netguard.Rule;
 import eu.faircode.netguard.ServiceSinkhole;
 import eu.faircode.netguard.Util;
 import eu.faircode.netguard.db.DatabaseHelper;
-import eu.faircode.netguard.db.LogDB;
+import eu.faircode.netguard.dto.LogItem;
+import eu.faircode.netguard.parser.ICursorParser;
+import eu.faircode.netguard.parser.LogParser;
 import eu.faircode.netguard.ui.ActionBarActivity;
 import eu.faircode.netguard.ui.ActivityPro;
 import eu.faircode.netguard.ui.rules.ActivityMain;
@@ -72,21 +73,18 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
     public static final String TAG = "NetGuard.Log";
 
     private boolean running = false;
-    private ListView lvLog;
     private AdapterLog adapter;
     private MenuItem menuSearch = null;
 
     private boolean live;
-    private boolean resolve;
-    private boolean organization;
     private InetAddress vpn4 = null;
     private InetAddress vpn6 = null;
     private SwitchCompat swEnabled;
     private final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
+    private ICursorParser<LogItem> parser;
     private static final int REQUEST_PCAP = 1;
 
-    private DatabaseHelper.LogChangedListener listener = new DatabaseHelper.LogChangedListener() {
+    private final DatabaseHelper.LogChangedListener listener = new DatabaseHelper.LogChangedListener() {
         @Override
         public void onChanged() {
             runOnUiThread(new Runnable() {
@@ -104,8 +102,8 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
         running = true;
         // Get settings
         final boolean log = prefs.getBoolean(IPrefs.KEY_LOG, false);
-        resolve = prefs.getBoolean(IPrefs.KEY_RESOLVE, false);
-        organization = prefs.getBoolean(IPrefs.KEY_ORGANIZATION, false);
+        final boolean resolve = prefs.getBoolean(IPrefs.KEY_RESOLVE, false);
+        final boolean organization = prefs.getBoolean(IPrefs.KEY_ORGANIZATION, false);
 
         // Show disabled message
         findViewById(R.id.tvDisabled).setVisibility(log ? View.GONE : View.VISIBLE);
@@ -117,7 +115,7 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
         // Listen for preference changes
         prefs.registerOnSharedPreferenceChangeListener(this);
 
-        lvLog = findViewById(R.id.lvLog);
+        final ListView lvLog = findViewById(R.id.lvLog);
 
         final boolean udp = prefs.getBoolean(IPrefs.KEY_PROTO_UDP, true);
         final boolean tcp = prefs.getBoolean(IPrefs.KEY_PROTO_TCP, true);
@@ -125,7 +123,9 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
         final boolean allowed = prefs.getBoolean(IPrefs.KEY_TRAFFIC_ALLOWED, true);
         final boolean blocked = prefs.getBoolean(IPrefs.KEY_TRAFFIC_BLOCKED, true);
 
-        adapter = new AdapterLog(this, DatabaseHelper.getInstance(this).getLog(udp, tcp, other, allowed, blocked), resolve, organization);
+        final Cursor cursor = DatabaseHelper.getInstance(this).getLog(udp, tcp, other, allowed, blocked);
+        parser = new LogParser(cursor);
+        adapter = new AdapterLog(this, cursor, resolve, organization, parser);
         adapter.setFilterQueryProvider(this);
         lvLog.setOnItemClickListener(this);
         lvLog.setAdapter(adapter);
@@ -194,8 +194,7 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
             final boolean log = prefs.getBoolean(name, false);
 
             // Display disabled warning
-            final TextView tvDisabled = findViewById(R.id.tvDisabled);
-            tvDisabled.setVisibility(log ? View.GONE : View.VISIBLE);
+            findViewById(R.id.tvDisabled).setVisibility(log ? View.GONE : View.VISIBLE);
 
             // Check switch state
             final SwitchCompat swEnabled = getSupportActionBar().getCustomView().findViewById(R.id.swEnabled);
@@ -217,7 +216,7 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
                 if (query != null && query.length() > 0) {
                     for (Rule rule : Rule.getRules(true, ActivityLog.this))
                         if (rule.name != null && rule.name.toLowerCase().contains(query.toLowerCase())) {
-                            String newQuery = Integer.toString(rule.uid);
+                            final String newQuery = Integer.toString(rule.uid);
                             Log.i(TAG, "Search " + query + " found " + rule.name + " new " + newQuery);
                             return newQuery;
                         }
@@ -433,23 +432,11 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        final PackageManager pm = getPackageManager();
-        final Cursor cursor = (Cursor) adapter.getItem(position);
-        long time = cursor.getLong(cursor.getColumnIndex(LogDB.COL_TIME));
-        int version = cursor.getInt(cursor.getColumnIndex(LogDB.COL_VERSION));
-        int protocol = cursor.getInt(cursor.getColumnIndex(LogDB.COL_PROTOCOL));
-        final String saddr = cursor.getString(cursor.getColumnIndex(LogDB.COL_SADDR));
-        final int sport = (cursor.isNull(cursor.getColumnIndex(LogDB.COL_SPORT)) ? -1 : cursor.getInt(cursor.getColumnIndex(LogDB.COL_SPORT)));
-        final String daddr = cursor.getString(cursor.getColumnIndex(LogDB.COL_DADDR));
-        final int dport = (cursor.isNull(cursor.getColumnIndex(LogDB.COL_DPORT)) ? -1 : cursor.getInt(cursor.getColumnIndex(LogDB.COL_DPORT)));
-        final String dname = cursor.getString(cursor.getColumnIndex(LogDB.COL_DNAME));
-        final int uid = (cursor.isNull(cursor.getColumnIndex(LogDB.COL_UID)) ? -1 : cursor.getInt(cursor.getColumnIndex(LogDB.COL_UID)));
-        int allowed = (cursor.isNull(cursor.getColumnIndex(LogDB.COL_ALLOWED)) ? -1 : cursor.getInt(cursor.getColumnIndex(LogDB.COL_ALLOWED)));
-
+        final LogItem item = parser.parseItem((Cursor) adapter.getItem(position));
         // Get external address
         InetAddress addr = null;
         try {
-            addr = InetAddress.getByName(daddr);
+            addr = InetAddress.getByName(item.dAddr);
         } catch (UnknownHostException ex) {
             Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
@@ -457,11 +444,11 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
         final String ip;
         final int port;
         if (addr.equals(vpn4) || addr.equals(vpn6)) {
-            ip = saddr;
-            port = sport;
+            ip = item.sAddr;
+            port = item.sPort;
         } else {
-            ip = daddr;
-            port = dport;
+            ip = item.dAddr;
+            port = item.dPort;
         }
 
         // Build popup menu
@@ -469,17 +456,18 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
         popup.inflate(R.menu.log);
 
         // Application name
-        if (uid >= 0) {
-            popup.getMenu().findItem(R.id.menu_application).setTitle(TextUtils.join(", ", Util.getApplicationNames(uid, ActivityLog.this)));
+        if (item.uid >= 0) {
+            popup.getMenu().findItem(R.id.menu_application).setTitle(TextUtils.join(", ", Util.getApplicationNames(item.uid, ActivityLog.this)));
         }
         else {
             popup.getMenu().removeItem(R.id.menu_application);
         }
 
         // Destination IP
-        popup.getMenu().findItem(R.id.menu_protocol).setTitle(Util.getProtocolName(protocol, version, false));
+        popup.getMenu().findItem(R.id.menu_protocol).setTitle(Util.getProtocolName(item.protocol, item.version, false));
 
         // Whois
+        final PackageManager pm = getPackageManager();
         final Intent lookupIP = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.dnslytics.com/whois-lookup/" + ip));
         if (pm.resolveActivity(lookupIP, 0) == null) {
             popup.getMenu().removeItem(R.id.menu_whois);
@@ -502,17 +490,10 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
             popup.getMenu().removeItem(R.id.menu_block);
         }
 
-        final Packet packet = new Packet();
-        packet.version = version;
-        packet.protocol = protocol;
-        packet.daddr = daddr;
-        packet.dport = dport;
-        packet.time = time;
-        packet.uid = uid;
-        packet.allowed = (allowed > 0);
+        final Packet packet = new Packet(item);
 
         // Time
-        popup.getMenu().findItem(R.id.menu_time).setTitle(SimpleDateFormat.getDateTimeInstance().format(time));
+        popup.getMenu().findItem(R.id.menu_time).setTitle(SimpleDateFormat.getDateTimeInstance().format(item.time));
 
         // Handle click
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -521,7 +502,7 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
                 switch (menuItem.getItemId()) {
                     case R.id.menu_application: {
                         final Intent main = new Intent(ActivityLog.this, ActivityMain.class);
-                        main.putExtra(ActivityMain.EXTRA_SEARCH, Integer.toString(uid));
+                        main.putExtra(ActivityMain.EXTRA_SEARCH, Integer.toString(item.uid));
                         startActivity(main);
                         return true;
                     }
@@ -536,10 +517,10 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
 
                     case R.id.menu_allow:
                         if (IAB.isPurchased(ActivityPro.SKU_FILTER, ActivityLog.this)) {
-                            DatabaseHelper.getInstance(ActivityLog.this).updateAccess(packet, dname, 0);
+                            DatabaseHelper.getInstance(ActivityLog.this).updateAccess(packet, item.dName, 0);
                             ServiceSinkhole.reload("allow host", ActivityLog.this, false);
                             final Intent main = new Intent(ActivityLog.this, ActivityMain.class);
-                            main.putExtra(ActivityMain.EXTRA_SEARCH, Integer.toString(uid));
+                            main.putExtra(ActivityMain.EXTRA_SEARCH, Integer.toString(item.uid));
                             startActivity(main);
                         } else {
                             startActivity(new Intent(ActivityLog.this, ActivityPro.class));
@@ -548,10 +529,10 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
 
                     case R.id.menu_block:
                         if (IAB.isPurchased(ActivityPro.SKU_FILTER, ActivityLog.this)) {
-                            DatabaseHelper.getInstance(ActivityLog.this).updateAccess(packet, dname, 1);
+                            DatabaseHelper.getInstance(ActivityLog.this).updateAccess(packet, item.dName, 1);
                             ServiceSinkhole.reload("block host", ActivityLog.this, false);
                             final Intent main = new Intent(ActivityLog.this, ActivityMain.class);
-                            main.putExtra(ActivityMain.EXTRA_SEARCH, Integer.toString(uid));
+                            main.putExtra(ActivityMain.EXTRA_SEARCH, Integer.toString(item.uid));
                             startActivity(main);
                         } else
                             startActivity(new Intent(ActivityLog.this, ActivityPro.class));
@@ -559,7 +540,7 @@ public class ActivityLog extends ActionBarActivity implements SharedPreferences.
 
                     case R.id.menu_copy:
                         final ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                        final ClipData clip = ClipData.newPlainText("netguard", dname == null ? daddr : dname);
+                        final ClipData clip = ClipData.newPlainText("netguard", item.dName == null ? item.dAddr : item.dName);
                         clipboard.setPrimaryClip(clip);
                         return true;
 

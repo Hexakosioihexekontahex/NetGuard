@@ -19,6 +19,8 @@ package eu.faircode.netguard;
     Copyright 2015-2018 by Marcel Bokhorst (M66B)
 */
 
+import eu.faircode.netguard.dto.LogItem;
+
 public class Packet {
     public long time;
     public int version;
@@ -33,6 +35,16 @@ public class Packet {
     public boolean allowed;
 
     public Packet() {
+    }
+
+    public Packet(LogItem item) {
+        version = item.version;
+        protocol = item.protocol;
+        daddr = item.dAddr;
+        dport = item.dPort;
+        time = item.time;
+        uid = item.uid;
+        allowed = (item.allowed > 0);
     }
 
     @Override

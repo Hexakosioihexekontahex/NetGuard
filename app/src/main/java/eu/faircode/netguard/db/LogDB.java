@@ -1,7 +1,7 @@
 package eu.faircode.netguard.db;
 
 /**
- * Created by Owner
+ * Created by Max
  * on 18/10/2018.
  */
 public interface LogDB {

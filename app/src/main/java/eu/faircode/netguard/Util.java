@@ -384,13 +384,13 @@ public class Util {
 
     public static List<String> getApplicationNames(int uid, Context context) {
         final List<String> listResult = new ArrayList<>();
-        if (uid == 0) {
+        if (uid == Uid.ROOT) {
             listResult.add(context.getString(R.string.title_root));
         }
-        else if (uid == 1013) {
+        else if (uid == Uid.MEDIASERVER) {
             listResult.add(context.getString(R.string.title_mediaserver));
         }
-        else if (uid == 9999) {
+        else if (uid == Uid.NOBODY) {
             listResult.add(context.getString(R.string.title_nobody));
         }
         else {
@@ -402,7 +402,7 @@ public class Util {
             else {
                 for (String pkg : pkgs) {
                     try {
-                        ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+                        final ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
                         listResult.add(pm.getApplicationLabel(info).toString());
                     } catch (PackageManager.NameNotFoundException ignored) {
                     }
@@ -558,8 +558,8 @@ public class Util {
 
     public static String getProtocolName(int protocol, int version, boolean brief) {
         // https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-        String p = null;
-        String b = null;
+        final String p;
+        final String b;
         switch (protocol) {
             case 0:
                 p = "HOPO";
@@ -586,6 +586,10 @@ public class Util {
                 p = "ESP";
                 b = "E";
                 break;
+
+            default:
+                p = null;
+                b = null;
         }
         if (p == null)
             return Integer.toString(protocol) + "/" + version;

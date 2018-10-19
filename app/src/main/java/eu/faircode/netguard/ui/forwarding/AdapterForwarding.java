@@ -28,50 +28,56 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
 
+import eu.faircode.netguard.Forward;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.Util;
+import eu.faircode.netguard.parser.ICursorParser;
 
 public class AdapterForwarding extends CursorAdapter {
-    private int colProtocol;
-    private int colDPort;
-    private int colRAddr;
-    private int colRPort;
-    private int colRUid;
+    private final ICursorParser<Forward> parser;
 
-    public AdapterForwarding(Context context, Cursor cursor) {
+    AdapterForwarding(Context context, Cursor cursor, ICursorParser<Forward> parser) {
         super(context, cursor, 0);
-        colProtocol = cursor.getColumnIndex("protocol");
-        colDPort = cursor.getColumnIndex("dport");
-        colRAddr = cursor.getColumnIndex("raddr");
-        colRPort = cursor.getColumnIndex("rport");
-        colRUid = cursor.getColumnIndex("ruid");
+        this.parser = parser;
     }
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        return LayoutInflater.from(context).inflate(R.layout.forward, parent, false);
+        final View view = LayoutInflater.from(context).inflate(R.layout.forward, parent, false);
+        view.setTag(new ForwardVH(view));
+        return view;
     }
 
     @Override
     public void bindView(final View view, final Context context, final Cursor cursor) {
-        // Get values
-        int protocol = cursor.getInt(colProtocol);
-        int dport = cursor.getInt(colDPort);
-        String raddr = cursor.getString(colRAddr);
-        int rport = cursor.getInt(colRPort);
-        int ruid = cursor.getInt(colRUid);
+        ((ForwardVH)view.getTag()).bindItem(context, cursor);
+    }
 
-        // Get views
-        TextView tvProtocol = view.findViewById(R.id.tvProtocol);
-        TextView tvDPort = view.findViewById(R.id.tvDPort);
-        TextView tvRAddr = view.findViewById(R.id.tvRAddr);
-        TextView tvRPort = view.findViewById(R.id.tvRPort);
-        TextView tvRUid = view.findViewById(R.id.tvRUid);
+    private class ForwardVH {
 
-        tvProtocol.setText(Util.getProtocolName(protocol, 0, false));
-        tvDPort.setText(Integer.toString(dport));
-        tvRAddr.setText(raddr);
-        tvRPort.setText(Integer.toString(rport));
-        tvRUid.setText(TextUtils.join(", ", Util.getApplicationNames(ruid, context)));
+        private final View root;
+        private final TextView tvProtocol;
+        private final TextView tvDPort;
+        private final TextView tvRAddr;
+        private final TextView tvRPort;
+        private final TextView tvRUid;
+
+        ForwardVH(View view){
+            root = view;
+            tvProtocol = view.findViewById(R.id.tvProtocol);
+            tvDPort = view.findViewById(R.id.tvDPort);
+            tvRAddr = view.findViewById(R.id.tvRAddr);
+            tvRPort = view.findViewById(R.id.tvRPort);
+            tvRUid = view.findViewById(R.id.tvRUid);
+        }
+
+        void bindItem(Context context, Cursor cursor) {
+            final Forward item = parser.parseItem(cursor);
+            tvProtocol.setText(Util.getProtocolName(item.protocol, 0, false));
+            tvDPort.setText(String.valueOf(item.dport));
+            tvRAddr.setText(item.raddr);
+            tvRPort.setText(String.valueOf(item.rport));
+            tvRUid.setText(TextUtils.join(", ", Util.getApplicationNames(item.ruid, context)));
+        }
     }
 }

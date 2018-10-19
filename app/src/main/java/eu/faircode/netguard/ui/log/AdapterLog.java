@@ -50,10 +50,10 @@ import eu.faircode.netguard.GlideApp;
 import eu.faircode.netguard.IPrefs;
 import eu.faircode.netguard.R;
 import eu.faircode.netguard.ServiceSinkhole;
+import eu.faircode.netguard.Uid;
 import eu.faircode.netguard.Util;
 import eu.faircode.netguard.dto.LogItem;
 import eu.faircode.netguard.parser.ICursorParser;
-import eu.faircode.netguard.parser.LogParser;
 
 public class AdapterLog extends CursorAdapter {
     static String TAG = "NetGuard.Log";
@@ -70,11 +70,11 @@ public class AdapterLog extends CursorAdapter {
     private InetAddress vpn4;
     private InetAddress vpn6;
 
-    AdapterLog(Context context, Cursor cursor, boolean resolve, boolean organization) {
+    AdapterLog(Context context, Cursor cursor, boolean resolve, boolean organization, ICursorParser<LogItem> parser) {
         super(context, cursor, 0);
         this.resolve = resolve;
         this.organization = organization;
-        parser = new LogParser(cursor);
+        this.parser = parser;
 
         final TypedValue tv = new TypedValue();
         context.getTheme().resolveAttribute(R.attr.colorOn, tv, true);
@@ -231,13 +231,13 @@ public class AdapterLog extends CursorAdapter {
 
             // https://android.googlesource.com/platform/system/core/+/master/include/private/android_filesystem_config.h
             int uid = item.uid % 100000; // strip off user ID
-            if (uid == -1) {
+            if (uid == Uid.NO_UID) {
                 tvUid.setText("");
             }
-            else if (item.uid == 0) {
+            else if (item.uid == Uid.ROOT) {
                 tvUid.setText(context.getString(R.string.title_root));
             }
-            else if (item.uid == 9999) {
+            else if (item.uid == Uid.NOBODY) {
                 tvUid.setText("-"); // nobody
             }
             else {
